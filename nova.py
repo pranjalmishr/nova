@@ -1,156 +1,67 @@
-# from flask import Flask, request, jsonify, render_template
-# import os
-# import webbrowser
-
-# app = Flask(__name__)
-# USE_TTS = os.getenv("ENV") != "production"
-
-# # ========== TEXT TO SPEECH ==========
-# if USE_TTS:
-#     try:
-#         import pyttsx3
-#         engine = pyttsx3.init()
-#         voices = engine.getProperty('voices')
-#         engine.setProperty('voice', voices[0].id)  # Male voice
-
-#         def speak(text):
-#             print("Nova:", text)
-#             engine.say(text)
-#             engine.runAndWait()
-#     except Exception as e:
-#         print("Speech engine init failed:", e)
-
-#         def speak(text):
-#             print("Nova:", text)
-# else:
-#     def speak(text):
-#         print("Nova:", text)
-
-# # ========== HANDLE COMMAND ==========
-# def handle_command(query):
-#     query = query.lower()
-
-#     if "who developed you" in query:
-#         response = "I am developed by Mister Tanay Pandey, he is my only boss and owner."
-
-#     elif "open youtube" in query:
-#         webbrowser.open("https://www.youtube.com")
-#         response = "Opening YouTube, boss!"
-
-#     elif "open google" in query:
-#         webbrowser.open("https://www.google.com")
-#         response = "Opening Google, boss!"
-
-#     elif "open instagram" in query:
-#         webbrowser.open("https://www.instagram.com")
-#         response = "Opening Instagram, boss!"
-
-#     elif "open wikipedia" in query:
-#         webbrowser.open("https://www.wikipedia.org")
-#         response = "Opening Wikipedia, boss!"
-
-#     elif "open twitter" in query:
-#         webbrowser.open("https://www.twitter.com")
-#         response = "Opening Twitter, boss!"
-
-#     elif "open github" in query:
-#         webbrowser.open("https://www.github.com")
-#         response = "Opening GitHub, boss!"
-
-#     elif "open whatsapp" in query:
-#         webbrowser.open("https://web.whatsapp.com")
-#         response = "Opening WhatsApp Web, boss!"
-
-#     elif "open netflix" in query:
-#         webbrowser.open("https://www.netflix.com")
-#         response = "Opening Netflix, boss!"
-
-#     elif "open jnv" in query or "open navodaya" in query:
-#         webbrowser.open("https://navodaya.gov.in")
-#         response = "Opening Jawahar Navodaya Vidyalaya Samiti website, boss!"
-
-#     elif "open facebook" in query:
-#         webbrowser.open("https://www.facebook.com")
-#         response = "Opening Facebook, boss!"
-
-#     elif "open amazon" in query:
-#         webbrowser.open("https://www.amazon.com")
-#         response = "Opening Amazon, boss!"
-
-#     elif "open reddit" in query:
-#         webbrowser.open("https://www.reddit.com")
-#         response = "Opening Reddit, boss!"
-
-#     else:
-#         response = "Sorry boss, I didn't understand. Please try again."
-
-#     speak(response)
-#     return response
-
-# # ========== ROUTES ==========
-# @app.route("/")
-# def index():
-#     return render_template("nova.html")
-
-# @app.route("/nova", methods=["POST"])
-# def nova_command():
-#     data = request.get_json()
-#     user_input = data.get("command", "")
-#     reply = handle_command(user_input)
-#     return jsonify({"reply": reply})
-
-# # ========== MAIN ==========
-# import os
-
-# if __name__ == "__main__":
-#     port = int(os.environ.get("PORT", 5000))
-#     app.run(debug=True, host="0.0.0.0", port=port)
-
 from flask import Flask, render_template, request, jsonify
 import webbrowser
 import datetime
-import os
+import pyttsx3
 
 app = Flask(__name__)
 
-# --- Core logic ---
-def handleCommand(command):
+# Initialize text-to-speech engine
+engine = pyttsx3.init()
+
+def speak(text):
+    print("Nova says:", text)
+    engine.say(text)
+    engine.runAndWait()
+
+# Function to handle commands
+def handle_command(command):
     command = command.lower()
+    response = "Sorry, I didn't understand that."
 
     if "open youtube" in command:
         webbrowser.open("https://www.youtube.com")
-        return "Opening YouTube."
+        response = "Opening YouTube."
 
     elif "open google" in command:
         webbrowser.open("https://www.google.com")
-        return "Opening Google."
+        response = "Opening Google."
 
-    elif "time" in command:
-        now = datetime.datetime.now().strftime("%H:%M:%S")
-        return f"The current time is {now}."
+    elif "what time" in command or "tell me the time" in command:
+        now = datetime.datetime.now().strftime("%I:%M %p")
+        response = f"The current time is {now}."
 
-    elif "date" in command:
-        today = datetime.date.today().strftime("%B %d, %Y")
-        return f"Today's date is {today}."
+    elif "search" in command:
+        query = command.replace("search", "").strip()
+        if query:
+            url = f"https://www.google.com/search?q={query}"
+            webbrowser.open(url)
+            response = f"Searching Google for {query}."
+        else:
+            response = "What would you like me to search?"
 
-    else:
-        return "Sorry, I didn't understand that command."
+    elif "play music" in command:
+        webbrowser.open("https://open.spotify.com")
+        response = "Playing music on Spotify."
 
-# --- Routes ---
-@app.route("/")
+    elif "hello" in command or "hi" in command:
+        response = "Hello! How can I assist you today?"
+
+    speak(response)
+    return response
+
+# Routes
+@app.route('/')
 def index():
-    return render_template("nova.html")
+    return render_template('nova.html')
 
-@app.route("/nova", methods=["POST"])
+@app.route('/nova', methods=['POST'])
 def nova_response():
-    data = request.get_json()
-    user_input = data.get("query", "")
+    user_input = request.form['user_input']
+    response = handle_command(user_input)
+    return jsonify({'response': response})
 
-    response = handleCommand(user_input)
-
-    return jsonify({"response": response})
-
-# --- Entry point ---
-if __name__ == "__main__":
+# Run app on Render
+if __name__ == '__main__':
+    import os
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(debug=True, host='0.0.0.0', port=port)
