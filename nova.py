@@ -1,9 +1,13 @@
 from flask import Flask, request, jsonify, render_template
 import os
+import webbrowser
 
-# Optional: Only use pyttsx3 in local dev environment
-try:
-    if os.getenv("ENV") != "production":
+app = Flask(__name__)
+USE_TTS = os.getenv("ENV") != "production"
+
+# ========== TEXT TO SPEECH ==========
+if USE_TTS:
+    try:
         import pyttsx3
         engine = pyttsx3.init()
         voices = engine.getProperty('voices')
@@ -13,14 +17,14 @@ try:
             print("Nova:", text)
             engine.say(text)
             engine.runAndWait()
-    else:
+    except Exception as e:
+        print("Speech engine init failed:", e)
+
         def speak(text):
             print("Nova:", text)
-except ImportError:
+else:
     def speak(text):
         print("Nova:", text)
-
-app = Flask(__name__)
 
 # ========== HANDLE COMMAND ==========
 def handle_command(query):
@@ -29,46 +33,53 @@ def handle_command(query):
     if "who developed you" in query:
         response = "I am developed by Mister Tanay Pandey, he is my only boss and owner."
 
-    elif "search" in query:
-        response = f"Searching for '{query.replace('search', '').strip()}' on Google."
-        # Suggest a link instead of opening it
-        response += " You can try: https://www.google.com/search?q=" + query.replace("search", "").strip().replace(" ", "+")
-
     elif "open youtube" in query:
-        response = "Opening YouTube: https://www.youtube.com"
+        webbrowser.open("https://www.youtube.com")
+        response = "Opening YouTube, boss!"
 
     elif "open google" in query:
-        response = "Opening Google: https://www.google.com"
+        webbrowser.open("https://www.google.com")
+        response = "Opening Google, boss!"
 
     elif "open instagram" in query:
-        response = "Opening Instagram: https://www.instagram.com"
+        webbrowser.open("https://www.instagram.com")
+        response = "Opening Instagram, boss!"
 
     elif "open wikipedia" in query:
-        response = "Opening Wikipedia: https://www.wikipedia.org"
+        webbrowser.open("https://www.wikipedia.org")
+        response = "Opening Wikipedia, boss!"
 
     elif "open twitter" in query:
-        response = "Opening Twitter: https://www.twitter.com"
+        webbrowser.open("https://www.twitter.com")
+        response = "Opening Twitter, boss!"
 
     elif "open github" in query:
-        response = "Opening GitHub: https://www.github.com"
+        webbrowser.open("https://www.github.com")
+        response = "Opening GitHub, boss!"
 
     elif "open whatsapp" in query:
-        response = "Opening WhatsApp Web: https://web.whatsapp.com"
+        webbrowser.open("https://web.whatsapp.com")
+        response = "Opening WhatsApp Web, boss!"
 
     elif "open netflix" in query:
-        response = "Opening Netflix: https://www.netflix.com"
+        webbrowser.open("https://www.netflix.com")
+        response = "Opening Netflix, boss!"
 
     elif "open jnv" in query or "open navodaya" in query:
-        response = "Opening Jawahar Navodaya Vidyalaya: https://navodaya.gov.in"
+        webbrowser.open("https://navodaya.gov.in")
+        response = "Opening Jawahar Navodaya Vidyalaya Samiti website, boss!"
 
     elif "open facebook" in query:
-        response = "Opening Facebook: https://www.facebook.com"
+        webbrowser.open("https://www.facebook.com")
+        response = "Opening Facebook, boss!"
 
     elif "open amazon" in query:
-        response = "Opening Amazon: https://www.amazon.com"
+        webbrowser.open("https://www.amazon.com")
+        response = "Opening Amazon, boss!"
 
     elif "open reddit" in query:
-        response = "Opening Reddit: https://www.reddit.com"
+        webbrowser.open("https://www.reddit.com")
+        response = "Opening Reddit, boss!"
 
     else:
         response = "Sorry boss, I didn't understand. Please try again."
@@ -77,7 +88,6 @@ def handle_command(query):
     return response
 
 # ========== ROUTES ==========
-
 @app.route("/")
 def index():
     return render_template("nova.html")
@@ -93,5 +103,5 @@ def nova_command():
 if __name__ == "__main__":
     print("Nova Flask backend running at http://127.0.0.1:5000")
     speak("Ram Ram Ram Boss!")
-    speak("Hey, Nova is ready to assist you, boss!")
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    speak("Hey, Nova is ready to assist you boss!")
+    app.run(debug=True)
