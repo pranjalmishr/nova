@@ -2,132 +2,100 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>N.O.V.A. Interface</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nova - Voice Assistant</title>
   <style>
     body {
-      margin: 0;
-      height: 100vh;
-      background: linear-gradient(135deg, #000011, #001933);
-      background-size: 400% 400%;
-      animation: bgShift 20s ease infinite;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
       font-family: 'Segoe UI', sans-serif;
-      overflow: hidden;
+      text-align: center;
+      padding: 2rem;
+      background: #f0f4f8;
     }
-
-    @keyframes bgShift {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
+    h1 {
+      color: #333;
     }
-
-    .dot {
-      width: 300px;
-      height: 300px;
-      border-radius: 50%;
-      background: #00bfff;
-      box-shadow:
-        0 0 80px #00bfff,
-        0 0 120px #00bfff,
-        0 0 180px #00bfff,
-        inset 0 0 60px #00bfff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      animation: pulse 6s ease-in-out infinite;
+    input, button {
+      font-size: 1rem;
+      padding: 0.5rem;
+      margin: 0.5rem;
+      width: 250px;
     }
-
-    @keyframes pulse {
-      0%, 100% {
-        transform: scale(1);
-        box-shadow:
-          0 0 80px #00bfff,
-          0 0 120px #00bfff,
-          0 0 180px #00bfff,
-          inset 0 0 60px #00bfff;
-      }
-      50% {
-        transform: scale(1.05);
-        box-shadow:
-          0 0 100px #00bfff,
-          0 0 150px #00bfff,
-          0 0 220px #00bfff,
-          inset 0 0 80px #00bfff;
-      }
-    }
-
-    .dot span {
-      font-size: 22px;
-      letter-spacing: 5px;
+    #response {
+      margin-top: 1.5rem;
       font-weight: bold;
-      color: #001a33;
-      text-shadow:
-        0 0 10px #66e0ff,
-        0 0 20px #66e0ff;
     }
-
-    .input-container {
-      width: 320px;
-      margin-top: 50px;
-    }
-
-    input[type="text"] {
-      width: 100%;
-      padding: 12px;
-      background-color: rgba(10, 15, 26, 0.7);
-      color: #00bfff;
-      border: 1px solid #00bfff;
-      border-radius: 8px;
-      outline: none;
-      font-size: 16px;
-    }
-
-    input[type="text"]::placeholder {
-      color: #008fd1aa;
+    #mic {
+      background-color: #e74c3c;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      font-size: 1.5rem;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
+  <h1>🎙️ Nova - Voice Assistant</h1>
+  
+  <input type="text" id="query" placeholder="Ask Nova something..." />
+  <button onclick="askNova()">Ask</button>
+  <br>
+  <button id="mic" onclick="startListening()">🎤</button>
 
-  <div class="dot"><span>N.O.V.A.</span></div>
-
-  <div class="input-container">
-    <input type="text" id="commandInput" placeholder="Type your command and press Enter" />
-  </div>
+  <div id="response"></div>
 
   <script>
-    const input = document.getElementById("commandInput");
+    async function askNova() {
+      const query = document.getElementById("query").value.trim();
+      if (!query) return;
 
-    input.addEventListener("keypress", function (event) {
-      if (event.key === "Enter") {
-        const command = input.value.trim();
-        if (!command) return;
+      const responseDiv = document.getElementById("response");
 
-        fetch("/nova", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ command: command }),
-        })
-          .then((res) => res.json())
-          .then((data) => {
-            const reply = data.reply;
-            speak(reply);
-            input.value = "";
-          });
-      }
-    });
+      const res = await fetch("/nova", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ query })
+      });
 
-    function speak(text) {
+      const data = await res.json();
+      const reply = data.response;
+      responseDiv.textContent = "Nova: " + reply;
+
+      // Speak the response using browser TTS
       const synth = window.speechSynthesis;
-      const utter = new SpeechSynthesisUtterance(text);
-      utter.pitch = 1;
-      utter.rate = 1;
-      utter.volume = 1;
+      const utter = new SpeechSynthesisUtterance(reply);
       synth.speak(utter);
+    }
+
+    function startListening() {
+      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recognition.lang = 'en-US';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = () => {
+        document.getElementById("query").placeholder = "Listening...";
+      };
+
+      recognition.onerror = (event) => {
+        alert("Error: " + event.error);
+      };
+
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        document.getElementById("query").value = transcript;
+        askNova();
+      };
+
+      recognition.onend = () => {
+        document.getElementById("query").placeholder = "Ask Nova something...";
+      };
+
+      recognition.start();
     }
   </script>
 </body>
