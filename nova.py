@@ -1,93 +1,40 @@
-from flask import Flask, request, jsonify, render_template
-import os
-import webbrowser
+from flask import Flask, render_template, request, jsonify
+import pyttsx3
 
 app = Flask(__name__)
-USE_TTS = os.getenv("ENV") != "production"
 
-# ========== TEXT TO SPEECH ==========
-if USE_TTS:
-    try:
-        import pyttsx3
-        engine = pyttsx3.init()
-        voices = engine.getProperty('voices')
-        engine.setProperty('voice', voices[0].id)  # Male voice
+# Initialize Text-to-Speech engine
+engine = pyttsx3.init()
+engine.setProperty("rate", 170)
 
-        def speak(text):
-            print("Nova:", text)
-            engine.say(text)
-            engine.runAndWait()
-    except Exception as e:
-        print("Speech engine init failed:", e)
+def speak(text):
+    engine.say(text)
+    engine.runAndWait()
 
-        def speak(text):
-            print("Nova:", text)
-else:
-    def speak(text):
-        print("Nova:", text)
-
-# ========== HANDLE COMMAND ==========
 def handle_command(query):
     query = query.lower()
+    url = None
 
-    if "who developed you" in query:
-        response = "I am developed by Mister Tanay Pandey, he is my only boss and owner."
-
+    if "hello" in query:
+        response = "Hello boss, how can I help you?"
+    elif "how are you" in query:
+        response = "I'm doing great, boss. Ready to help you anytime!"
     elif "open youtube" in query:
-        webbrowser.open("https://www.youtube.com")
         response = "Opening YouTube, boss!"
-
+        url = "https://www.youtube.com"
     elif "open google" in query:
-        webbrowser.open("https://www.google.com")
         response = "Opening Google, boss!"
-
-    elif "open instagram" in query:
-        webbrowser.open("https://www.instagram.com")
-        response = "Opening Instagram, boss!"
-
-    elif "open wikipedia" in query:
-        webbrowser.open("https://www.wikipedia.org")
-        response = "Opening Wikipedia, boss!"
-
-    elif "open twitter" in query:
-        webbrowser.open("https://www.twitter.com")
-        response = "Opening Twitter, boss!"
-
+        url = "https://www.google.com"
     elif "open github" in query:
-        webbrowser.open("https://www.github.com")
         response = "Opening GitHub, boss!"
-
-    elif "open whatsapp" in query:
-        webbrowser.open("https://web.whatsapp.com")
-        response = "Opening WhatsApp Web, boss!"
-
-    elif "open netflix" in query:
-        webbrowser.open("https://www.netflix.com")
-        response = "Opening Netflix, boss!"
-
-    elif "open jnv" in query or "open navodaya" in query:
-        webbrowser.open("https://navodaya.gov.in")
-        response = "Opening Jawahar Navodaya Vidyalaya Samiti website, boss!"
-
-    elif "open facebook" in query:
-        webbrowser.open("https://www.facebook.com")
-        response = "Opening Facebook, boss!"
-
-    elif "open amazon" in query:
-        webbrowser.open("https://www.amazon.com")
-        response = "Opening Amazon, boss!"
-
-    elif "open reddit" in query:
-        webbrowser.open("https://www.reddit.com")
-        response = "Opening Reddit, boss!"
-
+        url = "https://github.com"
+    elif "thank you" in query or "thanks" in query:
+        response = "You're welcome, boss!"
     else:
         response = "Sorry boss, I didn't understand. Please try again."
 
-    speak(response)
-    return response
+    return response, url
 
-# ========== ROUTES ==========
 @app.route("/")
 def index():
     return render_template("nova.html")
@@ -96,14 +43,10 @@ def index():
 def nova_command():
     data = request.get_json()
     user_input = data.get("command", "")
-    reply = handle_command(user_input)
-    return jsonify({"reply": reply})
+    reply, url = handle_command(user_input)
+    return jsonify({"reply": reply, "url": url})
 
-# ========== MAIN ==========
 if __name__ == "__main__":
-    print("Nova Flask backend running...")
-    speak("Ram Ram Ram Boss!")
-    speak("Hey, Nova is ready to assist you boss!")
-
+    import os
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(debug=True, host="0.0.0.0", port=port)

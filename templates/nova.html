@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>N.O.V.A. Interface</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>N.O.V.A - Voice Assistant</title>
   <style>
     body {
       margin: 0;
@@ -90,45 +90,39 @@
       color: #008fd1aa;
     }
   </style>
-</head>
-<body>
-
-  <div class="dot"><span>N.O.V.A.</span></div>
-
-  <div class="input-container">
-    <input type="text" id="commandInput" placeholder="Type your command and press Enter" />
-  </div>
-
   <script>
-    const input = document.getElementById("commandInput");
-
-    input.addEventListener("keypress", function (event) {
-      if (event.key === "Enter") {
-        const command = input.value.trim();
-        if (!command) return;
-
-        fetch("/nova", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ command: command }),
-        })
-          .then((res) => res.json())
-          .then((data) => {
-            const reply = data.reply;
-            speak(reply);
-            input.value = "";
-          });
-      }
-    });
-
     function speak(text) {
       const synth = window.speechSynthesis;
-      const utter = new SpeechSynthesisUtterance(text);
-      utter.pitch = 1;
-      utter.rate = 1;
-      utter.volume = 1;
-      synth.speak(utter);
+      const utterThis = new SpeechSynthesisUtterance(text);
+      synth.speak(utterThis);
+    }
+
+    function sendCommand() {
+      const input = document.getElementById("commandInput");
+      const command = input.value;
+
+      fetch("/nova", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ command })
+      })
+        .then(response => response.json())
+        .then(data => {
+          speak(data.reply);
+          if (data.url) {
+            window.open(data.url, "_blank");
+          }
+          input.value = "";
+        });
     }
   </script>
+</head>
+<body>
+  <h1>N.O.V.A - Voice Assistant</h1>
+  <input type="text" id="commandInput" placeholder="Say something..." />
+  <button onclick="sendCommand()">Send</button>
 </body>
 </html>
+
